@@ -111,6 +111,84 @@
         ground.receiveShadow = true;
         scene.add(ground);
 
+        // Create simple but realistic river
+        function createRiver() {
+            const riverGroup = new THREE.Group();
+            
+            // Main river water - simple but effective
+            const riverGeometry = new THREE.PlaneGeometry(4, 20, 8, 12);
+            const riverMaterial = new THREE.MeshLambertMaterial({
+                color: 0x0066CC, // Bright blue
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const river = new THREE.Mesh(riverGeometry, riverMaterial);
+            river.rotation.x = -Math.PI / 2;
+            river.position.y = -0.2; // Higher up to be visible
+            river.receiveShadow = true;
+            river.userData.baseY = -0.2;
+            riverGroup.add(river);
+            
+            // River banks
+            const bankGeometry = new THREE.PlaneGeometry(5, 20, 8, 12);
+            const bankMaterial = new THREE.MeshLambertMaterial({
+                color: 0x8B4513 // Brown
+            });
+            
+            const leftBank = new THREE.Mesh(bankGeometry, bankMaterial);
+            leftBank.rotation.x = -Math.PI / 2;
+            leftBank.position.y = -0.3;
+            leftBank.position.x = -3;
+            leftBank.receiveShadow = true;
+            riverGroup.add(leftBank);
+            
+            const rightBank = new THREE.Mesh(bankGeometry, bankMaterial);
+            rightBank.rotation.x = -Math.PI / 2;
+            rightBank.position.y = -0.3;
+            rightBank.position.x = 3;
+            rightBank.receiveShadow = true;
+            riverGroup.add(rightBank);
+            
+            // Water ripples
+            for (let i = 0; i < 5; i++) {
+                const rippleGeometry = new THREE.PlaneGeometry(4.5, 3, 4, 4);
+                const rippleMaterial = new THREE.MeshLambertMaterial({
+                    color: 0x0099FF,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                
+                const ripple = new THREE.Mesh(rippleGeometry, rippleMaterial);
+                ripple.rotation.x = -Math.PI / 2;
+                ripple.position.y = -0.1;
+                ripple.position.z = (i - 2) * 4;
+                ripple.userData.baseY = -0.1;
+                ripple.userData.rippleSpeed = 0.02 + i * 0.01;
+                riverGroup.add(ripple);
+            }
+            
+            // River stones
+            for (let i = 0; i < 15; i++) {
+                const stoneGeometry = new THREE.SphereGeometry(0.1 + Math.random() * 0.2, 6, 4);
+                const stoneMaterial = new THREE.MeshLambertMaterial({
+                    color: 0x696969
+                });
+                
+                const stone = new THREE.Mesh(stoneGeometry, stoneMaterial);
+                const x = (Math.random() - 0.5) * 3;
+                const z = (Math.random() - 0.5) * 16;
+                stone.position.set(x, -0.05, z);
+                stone.castShadow = true;
+                riverGroup.add(stone);
+            }
+            
+            return riverGroup;
+        }
+        
+        const river = createRiver();
+        scene.add(river);
+
         // Prettier tree creation
         class BeautifulTree {
             constructor(heightMultiplier = 1, x = 0, z = 0) {
@@ -314,6 +392,20 @@
                 
                 cluster.position.x = cluster.userData.basePosition.x + sway * 0.1;
                 cluster.position.y = cluster.userData.basePosition.y + Math.abs(sway) * 0.05;
+            });
+            
+            // Animate river water and ripples
+            river.children.forEach((child, index) => {
+                if (child.userData.rippleSpeed) {
+                    // Simple ripple animation
+                    child.position.y = child.userData.baseY + Math.sin(time * child.userData.rippleSpeed) * 0.02;
+                    child.material.opacity = 0.3 + Math.sin(time * 2) * 0.1;
+                }
+                if (child.userData.baseY && !child.userData.rippleSpeed) {
+                    // Main river animation
+                    child.position.y = child.userData.baseY + Math.sin(time * 0.5) * 0.01;
+                    child.material.opacity = 0.8 + Math.sin(time * 1.5) * 0.1;
+                }
             });
             
             // Update camera position
