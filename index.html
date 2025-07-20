@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beautiful Tree</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #87CEEB, #98FB98);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Georgia', serif;
+        }
+        
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 30px;
+            border-radius: 25px;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            background: linear-gradient(45deg, #2E8B57, #228B22, #32CD32);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        #canvas-container {
+            width: 800px;
+            height: 500px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            margin-top: 20px;
+            color: #2F4F2F;
+            font-size: 1em;
+            font-style: italic;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌳 Tree 🌳</h1>
+        <div id="canvas-container"></div>
+        <div class="controls">
+            ✨ Click and drag to explore • 🔍 Scroll to zoom • 💫 Watch the magic unfold
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, 800/500, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(800, 500);
+        renderer.setClearColor(0x87CEEB, 0.3);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        const container = document.getElementById('canvas-container');
+        container.appendChild(renderer.domElement);
+
+        // Enhanced lighting
+        const ambientLight = new THREE.AmbientLight(0xFFE4B5, 0.4);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xFFD700, 1.2);
+        directionalLight.position.set(10, 15, 5);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 1024;
+        directionalLight.shadow.mapSize.height = 1024;
+        scene.add(directionalLight);
+
+        const fillLight = new THREE.DirectionalLight(0x87CEEB, 0.3);
+        fillLight.position.set(-5, 10, -5);
+        scene.add(fillLight);
+
+        // Beautiful ground with texture-like appearance
+        const groundGeometry = new THREE.PlaneGeometry(25, 25, 20, 20);
+        const groundVertices = groundGeometry.attributes.position.array;
+        for (let i = 0; i < groundVertices.length; i += 3) {
+            groundVertices[i + 2] += Math.sin(groundVertices[i] * 0.3) * Math.cos(groundVertices[i + 1] * 0.3) * 0.1;
+        }
+        groundGeometry.attributes.position.needsUpdate = true;
+        groundGeometry.computeVertexNormals();
+
+        const groundMaterial = new THREE.MeshLambertMaterial({ 
+            color: new THREE.Color().setHSL(0.25, 0.6, 0.4)
+        });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -1;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Prettier tree creation
+        class BeautifulTree {
+            constructor() {
+                this.treeGroup = new THREE.Group();
+                this.leafClusters = [];
+                this.createTree();
+            }
+
+            createTree() {
+                // Enhanced trunk with texture-like variation
+                const trunkGeometry = new THREE.CylinderGeometry(0.15, 0.5, 4, 12);
+                const trunkMaterial = new THREE.MeshLambertMaterial({ 
+                    color: new THREE.Color().setHSL(0.08, 0.8, 0.25)
+                });
+                const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+                trunk.position.y = 1;
+                trunk.castShadow = true;
+                this.treeGroup.add(trunk);
+
+                // Graceful main branches with natural curves
+                this.createCurvedBranch(new THREE.Vector3(0, 2.5, 0), new THREE.Vector3(2, 1.5, 0.5), 0.12, 0x8B4513);
+                this.createCurvedBranch(new THREE.Vector3(0, 2.3, 0), new THREE.Vector3(-1.8, 1.2, -0.3), 0.1, 0x8B4513);
+                this.createCurvedBranch(new THREE.Vector3(0, 2.1, 0), new THREE.Vector3(0.5, 1.8, -1.5), 0.09, 0x8B4513);
+                this.createCurvedBranch(new THREE.Vector3(0, 1.9, 0), new THREE.Vector3(-1, 1.1, 1.2), 0.08, 0x8B4513);
+                this.createCurvedBranch(new THREE.Vector3(0, 2.7, 0), new THREE.Vector3(0.3, 2, 0.8), 0.07, 0x8B4513);
+
+                // Multiple layers of beautiful leaf clusters
+                this.createMagicalLeaves(new THREE.Vector3(2, 4, 0.5), 1.2, 0.3, 0.7, 0.6);
+                this.createMagicalLeaves(new THREE.Vector3(-1.8, 3.5, -0.3), 1.0, 0.25, 0.65, 0.7);
+                this.createMagicalLeaves(new THREE.Vector3(0.5, 3.9, -1.5), 0.9, 0.28, 0.72, 0.65);
+                this.createMagicalLeaves(new THREE.Vector3(-1, 3, 1.2), 0.8, 0.32, 0.68, 0.6);
+                this.createMagicalLeaves(new THREE.Vector3(0.3, 4.7, 0.8), 1.1, 0.27, 0.75, 0.7);
+                this.createMagicalLeaves(new THREE.Vector3(0, 3.8, 0), 1.3, 0.29, 0.7, 0.75);
+
+                // Add some smaller accent clusters
+                this.createMagicalLeaves(new THREE.Vector3(1, 2.8, 0.8), 0.6, 0.35, 0.8, 0.5);
+                this.createMagicalLeaves(new THREE.Vector3(-0.8, 2.5, -0.6), 0.5, 0.33, 0.78, 0.5);
+            }
+
+            createCurvedBranch(start, direction, thickness, color) {
+                const length = direction.length();
+                const branchGeometry = new THREE.CylinderGeometry(thickness * 0.6, thickness, length, 8);
+                
+                // Add slight curve to the branch
+                const positions = branchGeometry.attributes.position.array;
+                for (let i = 0; i < positions.length; i += 3) {
+                    const y = positions[i + 1];
+                    positions[i] += Math.sin(y * 0.5) * 0.1;
+                    positions[i + 2] += Math.cos(y * 0.3) * 0.05;
+                }
+                branchGeometry.attributes.position.needsUpdate = true;
+                branchGeometry.computeVertexNormals();
+
+                const branchMaterial = new THREE.MeshLambertMaterial({ 
+                    color: new THREE.Color(color).multiplyScalar(0.8 + Math.random() * 0.4)
+                });
+                
+                const branch = new THREE.Mesh(branchGeometry, branchMaterial);
+                branch.position.copy(start.clone().add(direction.clone().multiplyScalar(0.5)));
+                
+                const axis = new THREE.Vector3(0, 1, 0);
+                const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, direction.normalize());
+                branch.setRotationFromQuaternion(quaternion);
+                
+                branch.castShadow = true;
+                this.treeGroup.add(branch);
+            }
+
+            createMagicalLeaves(position, size, hue, saturation, lightness) {
+                // Create a more organic leaf cluster shape
+                const leafGroup = new THREE.Group();
+                
+                // Main cluster
+                const mainGeometry = new THREE.SphereGeometry(size, 12, 8);
+                const positions = mainGeometry.attributes.position.array;
+                for (let i = 0; i < positions.length; i += 3) {
+                    const noise = (Math.random() - 0.5) * 0.3;
+                    positions[i] += noise;
+                    positions[i + 1] += noise * 0.5;
+                    positions[i + 2] += noise;
+                }
+                mainGeometry.attributes.position.needsUpdate = true;
+                mainGeometry.computeVertexNormals();
+
+                const mainMaterial = new THREE.MeshLambertMaterial({ 
+                    color: new THREE.Color().setHSL(hue, saturation, lightness),
+                    transparent: true,
+                    opacity: 0.9
+                });
+                
+                const mainLeaves = new THREE.Mesh(mainGeometry, mainMaterial);
+                mainLeaves.castShadow = true;
+                leafGroup.add(mainLeaves);
+
+                // Add smaller accent clusters
+                for (let i = 0; i < 3; i++) {
+                    const accentGeometry = new THREE.SphereGeometry(size * 0.4, 8, 6);
+                    const accentMaterial = new THREE.MeshLambertMaterial({ 
+                        color: new THREE.Color().setHSL(hue + Math.random() * 0.1 - 0.05, saturation, lightness + Math.random() * 0.2 - 0.1),
+                        transparent: true,
+                        opacity: 0.8
+                    });
+                    
+                    const accent = new THREE.Mesh(accentGeometry, accentMaterial);
+                    accent.position.set(
+                        (Math.random() - 0.5) * size * 1.5,
+                        (Math.random() - 0.5) * size * 1.2,
+                        (Math.random() - 0.5) * size * 1.5
+                    );
+                    accent.castShadow = true;
+                    leafGroup.add(accent);
+                }
+
+                leafGroup.position.copy(position);
+                leafGroup.userData.basePosition = position.clone();
+                leafGroup.userData.swayAmount = 0.1 + Math.random() * 0.15;
+                this.leafClusters.push(leafGroup);
+                this.treeGroup.add(leafGroup);
+            }
+        }
+
+        // Create the beautiful tree
+        const tree = new BeautifulTree();
+        scene.add(tree.treeGroup);
+
+        // Camera position
+        camera.position.set(6, 4, 10);
+        camera.lookAt(0, 2, 0);
+
+        // Mouse controls
+        let isMouseDown = false;
+        let mouseX = 0;
+        let mouseY = 0;
+        let cameraAngleX = 0;
+        let cameraAngleY = 0;
+        let cameraDistance = 12;
+
+        renderer.domElement.addEventListener('mousedown', (event) => {
+            isMouseDown = true;
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
+        document.addEventListener('mousemove', (event) => {
+            if (isMouseDown) {
+                const deltaX = event.clientX - mouseX;
+                const deltaY = event.clientY - mouseY;
+                
+                cameraAngleY += deltaX * 0.01;
+                cameraAngleX += deltaY * 0.01;
+                
+                cameraAngleX = Math.max(-Math.PI/3, Math.min(Math.PI/3, cameraAngleX));
+                
+                mouseX = event.clientX;
+                mouseY = event.clientY;
+            }
+        });
+
+        // Zoom with scroll
+        renderer.domElement.addEventListener('wheel', (event) => {
+            event.preventDefault();
+            cameraDistance += event.deltaY * 0.01;
+            cameraDistance = Math.max(6, Math.min(25, cameraDistance));
+        });
+
+        // Animation variables
+        let time = 0;
+
+        // Animation loop with gentle movement
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            time += 0.01;
+            
+            // Gentle swaying of leaf clusters
+            tree.leafClusters.forEach((cluster, index) => {
+                const sway = Math.sin(time + index * 0.5) * cluster.userData.swayAmount;
+                cluster.rotation.z = sway * 0.1;
+                cluster.rotation.y = Math.cos(time * 0.7 + index) * sway * 0.05;
+                
+                cluster.position.x = cluster.userData.basePosition.x + sway * 0.1;
+                cluster.position.y = cluster.userData.basePosition.y + Math.abs(sway) * 0.05;
+            });
+            
+            // Update camera position
+            const targetX = Math.sin(cameraAngleY) * Math.cos(cameraAngleX) * cameraDistance;
+            const targetY = Math.sin(cameraAngleX) * cameraDistance + 3;
+            const targetZ = Math.cos(cameraAngleY) * Math.cos(cameraAngleX) * cameraDistance;
+            
+            camera.position.set(targetX, targetY, targetZ);
+            camera.lookAt(0, 2, 0);
+            
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
